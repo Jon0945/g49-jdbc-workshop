@@ -2,18 +2,16 @@ package se.lexicon.data;
 
 import se.lexicon.model.City;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CityDAOJDBC implements CityDAO {
     private static final String FIND_BY_ID = "SELECT * FROM city WHERE ID = ?";
     private static final String FIND_BY_CODE = "SELECT * FROM city WHERE CountryCode = ?";
-
     private static final String FIND_BY_NAME = "SELECT * FROM city WHERE Name = ?";
+    private static final String FIND_ALL = "SELECT * FROM city";
+    private static final String ADD_CITY = "INSERT INTO city (Name,CountryCode,District,Population) VALUES(?,?,?,?)";
 
     private PreparedStatement createFindById(Connection connection, int id) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(FIND_BY_ID);
@@ -33,6 +31,20 @@ public class CityDAOJDBC implements CityDAO {
         return statement;
     }
 
+    private PreparedStatement createFindAll(Connection connection) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(FIND_ALL);
+        return statement;
+    }
+
+    private PreparedStatement createAddCity(Connection connection, City newCity) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(ADD_CITY, Statement.RETURN_GENERATED_KEYS);
+        statement.setString(1,newCity.getCityName());
+        statement.setString(2,newCity.getCountryCode());
+        statement.setString(3,newCity.getCityDistrict());
+        statement.setInt(4,newCity.getCityPopulation());
+        statement.executeUpdate();
+        return statement;
+    }
 
     private City cityFromResultSet(ResultSet resultSet) throws SQLException {
         return new City(
@@ -98,12 +110,47 @@ public class CityDAOJDBC implements CityDAO {
     }
     @Override
     public List<City> findAll() {
-        return null;
+        List<City> result = new ArrayList<>();
+        try(
+                Connection connection = Database.getConnection();
+                PreparedStatement statement = createFindAll(connection);
+                ResultSet resultSet = statement.executeQuery()
+        ){
+            while (resultSet.next()) {
+                result.add(cityFromResultSet(resultSet));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     @Override
-    public City add(City city) {
-        return null;
+    public City add(City newCity) {
+        if(newCity.getCityId() !=0) {
+            return newCity;
+        }
+        try (
+                Connection connection = Database.getConnection();
+                PreparedStatement statement = createAddCity(connection,newCity);
+                ResultSet resultSet = statement.getGeneratedKeys()
+        ) {
+            int cityId = 0;
+            while (resultSet.next()) {
+                cityId = resultSet.getInt(1);
+            }
+
+            newCity = new City(
+                    cityId,
+                    newCity.getCityName(),
+                    newCity.getCountryCode(),
+                    newCity.getCityDistrict(),
+                    newCity.getCityPopulation()
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return newCity;
     }
     @Override
     public City update(City city) {

@@ -12,6 +12,8 @@ public class CityDAOJDBC implements CityDAO {
     private static final String FIND_BY_NAME = "SELECT * FROM city WHERE Name = ?";
     private static final String FIND_ALL = "SELECT * FROM city";
     private static final String ADD_CITY = "INSERT INTO city (Name,CountryCode,District,Population) VALUES(?,?,?,?)";
+    private static final String UPDATE_CITY = "UPDATE city SET Name = ?, CountryCode = ?, District = ?, Population = ? WHERE ID = ?";
+    private static final String DELETE_CITY = "DELETE FROM city WHERE ID = ?";
 
     private PreparedStatement createFindById(Connection connection, int id) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(FIND_BY_ID);
@@ -43,6 +45,22 @@ public class CityDAOJDBC implements CityDAO {
         statement.setString(3,newCity.getCityDistrict());
         statement.setInt(4,newCity.getCityPopulation());
         statement.executeUpdate();
+        return statement;
+    }
+
+    private PreparedStatement createUpdateCity(Connection connection, City city) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(UPDATE_CITY);
+        statement.setString(1,city.getCityName());
+        statement.setString(2,city.getCountryCode());
+        statement.setString(3,city.getCityDistrict());
+        statement.setInt(4,city.getCityPopulation());
+        statement.setInt(5,city.getCityId());
+        return statement;
+    }
+
+    private PreparedStatement createDeleteCity(Connection connection,int cityId) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(DELETE_CITY);
+        statement.setInt(1,cityId);
         return statement;
     }
 
@@ -153,13 +171,30 @@ public class CityDAOJDBC implements CityDAO {
         return newCity;
     }
     @Override
-    public City update(City city) {
-        return null;
+    public City update(City city) throws IllegalArgumentException {
+        if(city.getCityId() == 0) throw new IllegalArgumentException("Can not update. City doesn't exist");
+        try(
+                Connection connection = Database.getConnection();
+                PreparedStatement statement = createUpdateCity(connection,city)
+        ){
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return city;
     }
 
     @Override
     public int delete(City city) {
-        return 0;
+        int result = 0;
+        try(
+                Connection connection = Database.getConnection();
+                PreparedStatement statement = createDeleteCity(connection,city.getCityId())
+        ){
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
-
 }

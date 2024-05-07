@@ -1,13 +1,14 @@
 package se.lexicon;
 
-/**
- * Hello world!
- *
- */
-public class App 
+
+import se.lexicon.data.CityDAOJDBC;
+
+public class App
 {
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
+    public static void main( String[] args ) {
+        CityDAOJDBC cityDao = new CityDAOJDBC();
+        System.out.println(cityDao.findById(2));
+        System.out.println(cityDao.findByCode("KOR"));
+        System.out.println(cityDao.findByName("Stockholm"));
     }
 }
